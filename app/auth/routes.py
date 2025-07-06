@@ -20,3 +20,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     data["exp"] = expire
     token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
+
+@router.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    data = {"sub": form_data.username}
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    data["exp"] = expire
+    token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+    return {"access_token": token, "token_type": "bearer"}

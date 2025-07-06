@@ -1,0 +1,15 @@
+## Instruction for dev environment if docker-compose doesn't work
+
+run a redis server: 
+
+docker run -p 6379:6379 -it redis:latest
+
+run the postgres server:
+
+docker run --name my-postgres \
+  -e POSTGRES_DB=mydatabase \
+  -e POSTGRES_USER=myuser \
+  -e POSTGRES_PASSWORD=mypassword \
+  -p 5433:5432 \
+  -v pgdata:/var/lib/postgresql/data \
+  -d postgres:17
