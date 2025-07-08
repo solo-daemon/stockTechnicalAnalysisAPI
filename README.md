@@ -1,7 +1,7 @@
 # stockTechnicalAnalysisAPI
 An API which provides endpoint for stock information indicator updates
 
-## User Model
+## User Model with rate-limiter
 
 <img width="894" alt="Screenshot 2025-07-08 at 2 47 43 PM" src="https://github.com/user-attachments/assets/082c2016-a564-4ee1-bb48-8394e78464cd" />
 
