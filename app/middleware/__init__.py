@@ -1,2 +1,3 @@
 from app.middleware.url_cache import CacheMiddleware
 from app.middleware.rate_limiter import RateLimiterMiddleware
+from app.middleware.db_session import DBSessionMiddleware

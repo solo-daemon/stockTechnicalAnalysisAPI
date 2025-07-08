@@ -4,6 +4,9 @@ from pydantic import BaseModel, FilePath, field_validator, ValidationError
 from pathlib import Path
 from functools import lru_cache
 from typing import Optional
+from app.models import User
+from app.database import get_postgres_session
+from sqlmodel import Session
 class QueryStructure(BaseModel):
     symbol: str
     start_time: datetime
@@ -22,6 +25,15 @@ m = QueryStructure(
     start_time=1656633600000,
     end_time=1656979200000,
 )
+
+async def commit_user_to_db(user: User):
+    session: Session = next(get_postgres_session())
+    print("hello")
+    session.add(user)
+    print("world")
+    session.commit()
+    session.close()
+    return
 
 @lru_cache
 def read_file():

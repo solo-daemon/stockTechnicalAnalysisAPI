@@ -1,52 +1,58 @@
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
+from fastapi import Request, HTTPException, BackgroundTasks
 from starlette.responses import JSONResponse
-from fastapi import status
-from app.cache import get_redis_cache
-from app.auth.dependencies import get_current_user  # adjust path as needed
-import time
+from datetime import datetime
+from app.auth import get_current_user  # adjust as per your structure
+from app.database import get_postgres_session
+from app.api import commit_user_to_db
+from app.models import User
+from sqlmodel import Session
 
-# API call limits per minute based on tier
 TIER_LIMITS = {
-    "free": 10,
-    "pro": 100,
-    "premium": 1000
+    "FREE": {"max_tokens": 50, "max_months": 3},
+    "PRO": {"max_tokens": 500, "max_months": 12},
+    "PREMIUM": {"max_tokens": 10000, "max_months": 36},
 }
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.method == "OPTIONS":
+        if request.method == "OPTIONS" or not str(request.url.path).startswith("/api"):
             return await call_next(request)
-
+        session: Session = next(get_postgres_session())
         try:
-            user = await get_current_user(request)
-        except Exception:
+            user = await get_current_user(request, session=session)
+        except HTTPException:
             return JSONResponse({"detail": "Unauthorized"}, status_code=401)
 
-        user_id = user["user_id"]
-        tier = user.get("tier", "free")
-        max_requests = TIER_LIMITS.get(tier, 10)
+        tier_info = TIER_LIMITS[user.tier.name]
+        max_months = tier_info["max_months"]
 
-        redis_cache = get_redis_cache()
-        client = await redis_cache.get_client()
+        # Parse query parameters
+        start_time = request.query_params.get("start_time")
+        if start_time:
+            try:
+                start_timestamp = int(start_time) / 1e3
+                start_date = datetime.fromtimestamp(start_timestamp)
+                months_ago = (datetime.utcnow().year - start_date.year) * 12 + (datetime.utcnow().month - start_date.month)
 
-        # Redis key for this user's request count
-        current_window = int(time.time() // 60)
-        redis_key = f"rate:{user_id}:{current_window}"
+                if months_ago > max_months:
+                    return JSONResponse(
+                        {"detail": f"{user.tier.name.title()} tier allows access to only last {max_months} months of data"},
+                        status_code=403,
+                    )
+            except ValueError:
+                return JSONResponse({"detail": "Invalid start_time"}, status_code=400)
 
-        current = await client.get(redis_key)
-        current = int(current) if current else 0
-
-        if current >= max_requests:
+        # Rate limiting logic based on token count
+        if user.token_count <= 0:
             return JSONResponse(
-                {"detail": f"Rate limit exceeded for {tier} user"},
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS
+                {"detail": "You have exhausted your usage quota. Upgrade your tier to continue."},
+                status_code=429,
             )
 
-        # Increment counter and set expiry
-        pipe = client.pipeline()
-        pipe.incr(redis_key)
-        pipe.expire(redis_key, 60)  # expire after 1 min
-        await pipe.execute()
-
+        # Decrement token and commit
+        user.token_count -= 1
+        session.add(user)
+        session.commit()
         return await call_next(request)
+    

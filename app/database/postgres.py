@@ -1,10 +1,20 @@
 from sqlmodel import create_engine
 import os
+from dotenv import load_dotenv
+
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path)
+
+PG_DB_NAME=os.getenv("PG_DB_NAME")
+PG_DB_USER=os.getenv("PG_DB_USER")
+PG_DB_PASSWORD=os.getenv("PG_DB_PASSWORD")
+PG_DB_HOST=os.getenv("PG_DB_HOST")
+PG_DB_PORT=os.getenv("PG_DB_PORT")
 
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+psycopg2://myuser:mypassword@localhost:5433/mydatabase"
+    "DATABASE_URL",
+    f"postgresql+psycopg2://{PG_DB_USER}:{PG_DB_PASSWORD}@{PG_DB_HOST}:{PG_DB_PORT}/{PG_DB_NAME}"
 )
-
 # Thread pool by default; SQLAlchemy manages it
 postgresql_engine = create_engine(
     DATABASE_URL,

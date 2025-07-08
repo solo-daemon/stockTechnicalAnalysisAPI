@@ -5,5 +5,6 @@ from app.database.postgres import (
 )
 
 from app.database.dependecies import(
-    PostgresSessionDep
+    PostgresSessionDep,
+    get_postgres_session
 )
