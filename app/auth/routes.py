@@ -18,7 +18,7 @@ from app.database.dependecies import get_postgres_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+dotenv_path = os.path.join(os.path.dirname(__file__), "auth.env")
 load_dotenv(dotenv_path)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 

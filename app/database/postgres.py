@@ -2,7 +2,7 @@ from sqlmodel import create_engine
 import os
 from dotenv import load_dotenv
 
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+dotenv_path = os.path.join(os.path.dirname(__file__), "database.env")
 load_dotenv(dotenv_path)
 
 PG_DB_NAME=os.getenv("PG_DB_NAME")
